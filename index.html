@@ -1,0 +1,996 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Sparkles, 
+  Bot, 
+  ShoppingBag, 
+  Trash2, 
+  Settings, 
+  Save, 
+  Copy, 
+  Check, 
+  AlertCircle, 
+  Eye, 
+  Code, 
+  Smartphone, 
+  Monitor,
+  CheckCircle2,
+  FileCode,
+  Database,
+  Terminal,
+  Layers,
+  ArrowRight,
+  Server,
+  Cpu,
+  RefreshCw,
+  Zap,
+  Lock,
+  Key,
+  EyeOff
+} from 'lucide-react';
+
+// The execution environment automatically provides the key at runtime for this exact variable.
+// Do not add custom API key validation logic to prevent runtime blockages.
+const apiKey = "";
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('builder'); // 'builder' | 'store' | 'integrator' | 'secrets'
+  const [activeBuilderMode, setActiveBuilderMode] = useState('fullstack'); // 'frontend' | 'backend' | 'fullstack'
+  const [prompt, setPrompt] = useState('A real-time analytics dashboard with sales tracking columns and high-end dark gradient look');
+  const [refinePrompt, setRefinePrompt] = useState(''); // Charge Back Refinement Prompt State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isImproving, setIsImproving] = useState(false); // Refinement progress state
+  const [error, setError] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '' });
+  
+  // Secrets Manager State
+  const [secrets, setSecrets] = useState(() => {
+    const saved = localStorage.getItem('uipie-secrets');
+    return saved ? JSON.parse(saved) : [
+      { id: '1', name: 'Gemini Auto-Key', value: apiKey, purpose: 'Injected environment core Gemini AI API Key', isSystem: true }
+    ];
+  });
+  const [newSecretName, setNewSecretName] = useState('');
+  const [newSecretValue, setNewSecretValue] = useState('');
+  const [newSecretPurpose, setNewSecretPurpose] = useState('Gemini API Key');
+  const [customPurposeText, setCustomPurposeText] = useState('');
+  const [showSecretValueId, setShowSecretValueId] = useState(null);
+
+  // Unified Local Storage Store
+  const [storeItems, setStoreItems] = useState(() => {
+    const saved = localStorage.getItem('uipie-store-v3');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 1,
+        type: 'frontend',
+        title: 'Glassmorphic Credit Card',
+        code: `<div class="relative w-80 h-48 rounded-2xl p-5 text-white overflow-hidden shadow-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/20 backdrop-blur-md">
+  <div class="flex flex-col h-full justify-between">
+    <div class="flex justify-between items-start">
+      <div>
+        <p class="text-[10px] tracking-widest uppercase opacity-80">Platinum Pay</p>
+        <p class="text-sm font-bold">UIPie Cloud</p>
+      </div>
+      <span class="text-xs font-black italic">VISA</span>
+    </div>
+    <p class="text-lg font-mono tracking-widest my-auto">•••• •••• •••• 1289</p>
+    <div class="flex justify-between text-[11px] opacity-90">
+      <span>Sarah Jenkins</span>
+      <span>12/28</span>
+    </div>
+  </div>
+</div>`,
+        date: new Date().toLocaleDateString()
+      },
+      {
+        id: 2,
+        type: 'backend',
+        title: 'SaaS Subscription API Schema',
+        code: `{
+  "endpoint": "/api/v1/subscriptions",
+  "method": "GET",
+  "description": "Mock endpoint for SaaS Subscriptions",
+  "databaseSchema": {
+    "tableName": "subscriptions",
+    "columns": [
+      {"name": "id", "type": "UUID", "primaryKey": true},
+      {"name": "userId", "type": "VARCHAR"},
+      {"name": "planName", "type": "VARCHAR", "default": "Starter"},
+      {"name": "status", "type": "VARCHAR", "default": "active"},
+      {"name": "monthlyPrice", "type": "DECIMAL"}
+    ]
+  },
+  "mockData": [
+    {"id": "sub-101", "userId": "usr_992", "planName": "Pro Plus", "status": "active", "monthlyPrice": 49.00},
+    {"id": "sub-102", "userId": "usr_403", "planName": "Enterprise", "status": "active", "monthlyPrice": 299.00},
+    {"id": "sub-103", "userId": "usr_781", "planName": "Free Tier", "status": "expired", "monthlyPrice": 0.00}
+  ]
+}`,
+        date: new Date().toLocaleDateString()
+      }
+    ];
+  });
+
+  const [copiedId, setCopiedId] = useState(null);
+  const [previewDevice, setPreviewDevice] = useState('mobile'); 
+  const [selectedItemForPreview, setSelectedItemForPreview] = useState(null);
+  
+  // Integrator State
+  const [selectedFrontend, setSelectedFrontend] = useState(null);
+  const [selectedBackend, setSelectedBackend] = useState(null);
+  const [integrationCode, setIntegrationCode] = useState('');
+
+  // Find the active Gemini key from user's custom secrets, or fall back to system apiKey
+  const getActiveApiKey = () => {
+    const userGemini = secrets.find(s => s.purpose === 'Gemini API Key' && !s.isSystem);
+    if (userGemini && userGemini.value) return userGemini.value;
+    return apiKey;
+  };
+
+  useEffect(() => { 
+    localStorage.setItem('uipie-secrets', JSON.stringify(secrets));
+  }, [secrets]);
+
+  useEffect(() => { 
+    localStorage.setItem('uipie-store-v3', JSON.stringify(storeItems)); 
+    if (storeItems.length > 0 && !selectedItemForPreview) {
+      setSelectedItemForPreview(storeItems[0]);
+    }
+  }, [storeItems]);
+
+  // Set default integrator targets
+  useEffect(() => {
+    const firstFe = storeItems.find(item => item.type === 'frontend');
+    const firstBe = storeItems.find(item => item.type === 'backend');
+    if (firstFe) setSelectedFrontend(firstFe);
+    if (firstBe) setSelectedBackend(firstBe);
+  }, [storeItems]);
+
+  // Auto-generate unified frontend-backend binding logic
+  useEffect(() => {
+    if (selectedFrontend && selectedBackend) {
+      let mockPayload = "[]";
+      try {
+        const parsed = JSON.parse(selectedBackend.code);
+        mockPayload = JSON.stringify(parsed.mockData || parsed, null, 2);
+      } catch (e) {
+        mockPayload = `[{"message": "Static API response payload loaded from ezbackend"}]`;
+      }
+
+      const integratedMarkup = `
+<div class="w-full max-w-md mx-auto space-y-4">
+  <!-- Dynamic ezbackend API status ribbon -->
+  <div class="bg-indigo-950 text-indigo-200 p-3 rounded-xl text-xs font-mono flex justify-between items-center shadow-inner border border-indigo-900/40">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      <span>ezbackend connection: Active</span>
+    </div>
+    <span class="bg-indigo-900 px-2 py-0.5 rounded text-white font-bold text-[10px]">ezbackendAI v1</span>
+  </div>
+
+  <!-- Live visual component rendering -->
+  <div id="uipie-visual-component">
+    ${selectedFrontend.code}
+  </div>
+
+  <!-- Real-time database table preview -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white space-y-3 font-mono text-xs">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+      <span class="text-indigo-400 font-bold">ezbackend Database Records</span>
+      <span class="text-[10px] text-slate-500">Live Simulation</span>
+    </div>
+    <div class="max-h-32 overflow-y-auto space-y-1 text-[10px]">
+      <pre class="text-slate-300 bg-slate-950 p-2 rounded-lg leading-relaxed">${mockPayload}</pre>
+    </div>
+  </div>
+</div>`;
+      setIntegrationCode(integratedMarkup);
+    }
+  }, [selectedFrontend, selectedBackend]);
+
+  const triggerToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: '' }), 2500);
+  };
+
+  const handleAddSecret = () => {
+    if (!newSecretName.trim() || !newSecretValue.trim()) {
+      alert("Please fill in both Secret Name and Value.");
+      return;
+    }
+    const finalPurpose = newSecretPurpose === 'Other' ? (customPurposeText || 'Custom Purpose') : newSecretPurpose;
+    const newSecret = {
+      id: Date.now().toString(),
+      name: newSecretName,
+      value: newSecretValue,
+      purpose: finalPurpose,
+      isSystem: false
+    };
+    setSecrets([...secrets, newSecret]);
+    setNewSecretName('');
+    setNewSecretValue('');
+    setCustomPurposeText('');
+    triggerToast('New secret saved to vault!');
+  };
+
+  const handleDeleteSecret = (id) => {
+    setSecrets(secrets.filter(s => s.id !== id));
+    triggerToast('Secret removed from vault.');
+  };
+
+  const getFullHtmlDocument = (code) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UIPie Generated Template</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  ${code}
+</body>
+</html>`;
+  };
+
+  const copyToClipboard = (text, id) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    triggerToast('Code copied to clipboard!');
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) { 
+      setError('Please write a prompt describing what you want to build!'); 
+      return; 
+    }
+    
+    setError(null);
+    setIsGenerating(true);
+    const activeApiKey = getActiveApiKey();
+    
+    try {
+      let promptText = "";
+      if (activeBuilderMode === 'frontend') {
+        promptText = `Generate valid, highly functional, beautiful HTML and Tailwind CSS code for: ${prompt}. Return ONLY the raw code. No markdown formatting, no explanations, and no triple backticks.`;
+      } else if (activeBuilderMode === 'backend') {
+        promptText = `Generate a valid, structured JSON configuration representing a mock API routing database with mockup tables and a database schema matching ezbackend protocol for: ${prompt}. Return ONLY the raw code inside a JSON structure. No explanations, no markdown formatting, and no triple backticks.`;
+      } else {
+        // Fullstack combined generation
+        promptText = `Generate a integrated fullstack solution for the following product description: "${prompt}". 
+        Your response must be a single structured JSON object containing exactly these properties:
+        {
+          "frontendCode": "raw HTML and Tailwind CSS code for the component UI layout",
+          "backendCode": "structured string representing mock API routing endpoints, database schema and matching mockup JSON table records in matching ezbackend protocol"
+        }
+        Do not wrap the JSON response inside markdown backticks. Return strictly the raw parsable JSON.`;
+      }
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${activeApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Connection Failed (Status: ${response.status}). Check network settings.`);
+      }
+      
+      const data = await response.json();
+      const rawCode = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!rawCode) throw new Error("The AI returned an empty result. Try rewriting your prompt.");
+      
+      const cleanedCode = rawCode
+        .replace(/^```html\s*/i, '')
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/, '')
+        .replace(/```$/, '')
+        .trim();
+
+      if (activeBuilderMode === 'fullstack') {
+        try {
+          const parsed = JSON.parse(cleanedCode);
+          const feItem = {
+            id: Date.now(),
+            type: 'frontend',
+            title: `${prompt.slice(0, 24)} (UI Client)`,
+            code: parsed.frontendCode,
+            date: new Date().toLocaleDateString()
+          };
+          const beItem = {
+            id: Date.now() + 1,
+            type: 'backend',
+            title: `${prompt.slice(0, 24)} (API Endpoint)`,
+            code: typeof parsed.backendCode === 'string' ? parsed.backendCode : JSON.stringify(parsed.backendCode, null, 2),
+            date: new Date().toLocaleDateString()
+          };
+
+          setStoreItems(prev => [feItem, beItem, ...prev]);
+          setSelectedItemForPreview(feItem);
+          setSelectedFrontend(feItem);
+          setSelectedBackend(beItem);
+          setActiveTab('integrator');
+          triggerToast('Fullstack Bundle compiled and auto-integrated!');
+        } catch (jsonErr) {
+          throw new Error("Fullstack JSON parsing failed. Try a more direct prompt or use Frontend/Backend builders.");
+        }
+      } else {
+        const newItem = { 
+          id: Date.now(),
+          type: activeBuilderMode,
+          title: prompt.slice(0, 32) + (prompt.length > 32 ? '...' : ''), 
+          code: cleanedCode, 
+          date: new Date().toLocaleDateString() 
+        };
+        
+        setStoreItems([newItem, ...storeItems]);
+        setSelectedItemForPreview(newItem);
+        setPrompt('');
+        setActiveTab('store');
+        triggerToast('Bespoke UI built and stored!');
+      }
+    } catch (e) { 
+      setError(e.message); 
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleImprove = async () => {
+    if (!refinePrompt.trim()) {
+      setError('Please type your refinement request inside the Charge Back AI field!');
+      return;
+    }
+    if (!selectedItemForPreview) {
+      setError('No component selected in UIshop to refine. Choose one first!');
+      return;
+    }
+
+    setError(null);
+    setIsImproving(true);
+    const activeApiKey = getActiveApiKey();
+
+    try {
+      const isFrontend = selectedItemForPreview.type === 'frontend';
+      const systemInstruction = isFrontend
+        ? "You are uipAI. Modify the provided HTML and Tailwind CSS code based on the refinement prompt instruction. Return ONLY the updated raw modified HTML/Tailwind CSS code. Do not include markdown code block syntax (like ```html), explanations, or conversational text."
+        : "You are ezbackendAI. Modify the provided JSON backend configuration based on the refinement prompt instruction. Return ONLY the updated raw modified JSON structure. Do not include markdown block formatting, conversational text, or explanation commentary.";
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${activeApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          contents: [{ 
+            parts: [{ 
+              text: `${systemInstruction}\n\nOriginal Code:\n${selectedItemForPreview.code}\n\nRefinement Request: ${refinePrompt}` 
+            }] 
+          }] 
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Connection Failed (Status: ${response.status}). Check network settings.`);
+      }
+
+      const data = await response.json();
+      const rawCode = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!rawCode) throw new Error("The AI returned an empty result.");
+
+      const cleanedCode = rawCode
+        .replace(/^```html\s*/i, '')
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/, '')
+        .replace(/```$/, '')
+        .trim();
+
+      const baseTitle = selectedItemForPreview.title.replace(/\s*\(Refined\)/g, '');
+      const newItem = {
+        id: Date.now(),
+        type: selectedItemForPreview.type,
+        title: `${baseTitle} (Refined)`,
+        code: cleanedCode,
+        date: new Date().toLocaleDateString()
+      };
+
+      setStoreItems([newItem, ...storeItems]);
+      setSelectedItemForPreview(newItem);
+      setRefinePrompt('');
+      triggerToast('Bespoke iteration successfully compiled!');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
+  const getIframeSrc = (code) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+        <style>
+          body {
+            margin: 0;
+            padding: 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+          }
+          ::-webkit-scrollbar { width: 4px; height: 4px; }
+          ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+        </style>
+      </head>
+      <body>
+        <div class="w-full flex justify-center items-center">
+          ${code}
+        </div>
+      </body>
+      </html>
+    `;
+    return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 font-sans text-slate-900 pb-12">
+      {/* Toast Alert */}
+      {toast.show && (
+        <div className="fixed bottom-6 right-6 flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 transition-all border border-slate-800 text-sm font-semibold">
+          <CheckCircle2 size={16} className="text-emerald-400" />
+          {toast.message}
+        </div>
+      )}
+
+      {/* Header bar */}
+      <header className="max-w-4xl mx-auto mb-6 mt-2 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-pink-500 flex items-center justify-center text-white shadow-md">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <span className="text-xl font-black bg-gradient-to-r from-indigo-600 via-violet-600 to-pink-500 bg-clip-text text-transparent">UIPie <span className="font-light text-slate-400">×</span> ezbackend</span>
+            <span className="text-[10px] block font-bold text-slate-400 -mt-1 uppercase tracking-wider">Create ONE AI Workspace</span>
+          </div>
+        </div>
+        <button 
+          onClick={() => setActiveTab('secrets')}
+          className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full font-semibold flex items-center gap-1.5 transition"
+        >
+          <Lock size={12} />
+          Secrets Vault ({secrets.filter(s => !s.isSystem).length})
+        </button>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav className="flex justify-center gap-1 bg-white p-1 rounded-2xl border border-slate-200/80 max-w-lg mx-auto mb-6 shadow-sm">
+        {[
+          { id: 'builder', label: 'Create ONE AI' },
+          { id: 'store', label: 'UIshop Hub' },
+          { id: 'integrator', label: 'Fullstack Bind' },
+          { id: 'secrets', label: 'Secrets Vault' }
+        ].map(tab => (
+          <button 
+            key={tab.id} 
+            onClick={() => setActiveTab(tab.id)} 
+            className={`flex-1 px-3 py-2 text-xs md:text-sm rounded-xl capitalize font-bold transition-all duration-150 ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-950 hover:bg-slate-50'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Main Container Grid */}
+      <main className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Hand Column (Forms and selection panels) */}
+        <div className="lg:col-span-5 space-y-4">
+          
+          {error && (
+            <div className="p-4 bg-rose-50 text-rose-700 rounded-2xl flex items-start gap-2.5 border border-rose-200 text-sm">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block">Engine Alert</span>
+                <span className="text-xs opacity-90">{error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* BUILDER SCREEN: Unified "Create ONE AI" */}
+          {activeTab === 'builder' && (
+            <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/60 space-y-4">
+              
+              {/* Creator Mode Selection */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Select Generation Target</label>
+                <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-2xl">
+                  <button 
+                    onClick={() => {
+                      setActiveBuilderMode('frontend');
+                      if (prompt.includes('table and API endpoint')) setPrompt('A elegant client data dashboard table list');
+                    }}
+                    className={`py-2 px-1 rounded-xl text-[10px] md:text-xs font-bold flex items-center justify-center gap-1 transition ${activeBuilderMode === 'frontend' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    <Sparkles size={12} />
+                    Frontend (uipAI)
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setActiveBuilderMode('backend');
+                      if (prompt.includes('SaaS pricing card')) setPrompt('A secure database endpoint structure for tracking customer items');
+                    }}
+                    className={`py-2 px-1 rounded-xl text-[10px] md:text-xs font-bold flex items-center justify-center gap-1 transition ${activeBuilderMode === 'backend' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500'}`}
+                  >
+                    <Database size={12} />
+                    Backend (ezAI)
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setActiveBuilderMode('fullstack');
+                      setPrompt('A complete SaaS user checkout flow linked to a subscription database table API');
+                    }}
+                    className={`py-2 px-1 rounded-xl text-[10px] md:text-xs font-bold flex items-center justify-center gap-1 transition ${activeBuilderMode === 'fullstack' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    <Layers size={12} />
+                    Fullstack Bundle
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-base font-extrabold flex items-center gap-1.5 text-slate-800">
+                    <Bot size={18} className="text-indigo-600" /> 
+                    {activeBuilderMode === 'frontend' && 'uipAI Frontend Designer'}
+                    {activeBuilderMode === 'backend' && 'ezbackendAI Schema Architect'}
+                    {activeBuilderMode === 'fullstack' && 'Create ONE AI Fullstack Builder'}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {activeBuilderMode === 'frontend' && 'Generates standalone interactive UI mockups with Tailwind CSS styling.'}
+                    {activeBuilderMode === 'backend' && 'Assembles mock JSON endpoints, column tables, and record databases.'}
+                    {activeBuilderMode === 'fullstack' && 'Creates BOTH the visual frontend client and database backend, automatically binding them.'}
+                  </p>
+                </div>
+
+                <textarea 
+                  value={prompt} 
+                  onChange={(e) => setPrompt(e.target.value)} 
+                  className="w-full h-36 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition" 
+                  placeholder="Describe your layout requirements..." 
+                />
+              </div>
+
+              <button 
+                onClick={handleGenerate} 
+                disabled={isGenerating} 
+                className="w-full text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 text-sm shadow-md active:scale-95 bg-slate-900 hover:bg-slate-800"
+              >
+                {isGenerating ? (
+                  <>
+                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-pulse"></span>
+                    Executing Create ONE Engine...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={16} className="text-amber-400 fill-amber-400" />
+                    Assemble & Deploy App
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* STORE AND CATALOG SCREEN */}
+          {activeTab === 'store' && (
+            <div className="space-y-3">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/60">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block">UIshop Repository Hub</span>
+                <p className="text-[11px] text-slate-500 mt-0.5">Interactive local database holding both Frontend Client blocks and ezbackend JSON API configurations.</p>
+              </div>
+
+              {storeItems.length === 0 ? (
+                <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                  Repository is empty. Fire up uipAI or ezbackendAI to start!
+                </div>
+              ) : (
+                storeItems.map(item => (
+                  <div 
+                    key={item.id} 
+                    onClick={() => setSelectedItemForPreview(item)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center shadow-sm ${selectedItemForPreview?.id === item.id ? 'bg-indigo-50/50 border-indigo-400 ring-2 ring-indigo-500/10' : 'bg-white border-slate-200/60 hover:bg-slate-50'}`}
+                  >
+                    <div className="flex-1 pr-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ${item.type === 'frontend' ? 'bg-violet-100 text-violet-700' : 'bg-slate-900 text-white'}`}>
+                          {item.type === 'frontend' ? 'uipAI' : 'ezbackend'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{item.date}</span>
+                      </div>
+                      <h4 className="font-bold text-sm text-slate-800 line-clamp-1 mt-1">{item.title}</h4>
+                    </div>
+                    <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                      <button 
+                        onClick={() => copyToClipboard(item.code, `snippet-${item.id}`)} 
+                        className="p-1.5 rounded-lg text-slate-400 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition"
+                        title="Copy Code"
+                      >
+                        {copiedId === `snippet-${item.id}` ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const nextItems = storeItems.filter(i => i.id !== item.id);
+                          setStoreItems(nextItems);
+                          if (selectedItemForPreview?.id === item.id) {
+                            setSelectedItemForPreview(nextItems[0] || null);
+                          }
+                        }} 
+                        className="p-1.5 rounded-lg text-slate-400 hover:bg-white hover:text-rose-500 hover:shadow-sm transition"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* FULLSTACK INTEGRATOR SCREEN */}
+          {activeTab === 'integrator' && (
+            <div className="bg-white p-5 rounded-3xl border border-slate-200/60 space-y-4">
+              <div>
+                <h2 className="text-base font-extrabold flex items-center gap-1.5 text-slate-800">
+                  <Layers size={18} className="text-indigo-600" /> Site Integrator
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">Select a front-end client and pair it with an ezbackend API endpoint to build a unified system blueprint.</p>
+              </div>
+
+              {/* Select Frontend UI Component */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">1. Select Visual Client (uipAI)</label>
+                <select 
+                  value={selectedFrontend ? selectedFrontend.id : ''} 
+                  onChange={(e) => setSelectedFrontend(storeItems.find(item => item.id === Number(e.target.value)))}
+                  className="w-full text-xs p-3 border rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="" disabled>Choose Visual UI...</option>
+                  {storeItems.filter(item => item.type === 'frontend').map(item => (
+                    <option key={item.id} value={item.id}>{item.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Select Backend Endpoint */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">2. Select API Endpoint (ezbackend)</label>
+                <select 
+                  value={selectedBackend ? selectedBackend.id : ''} 
+                  onChange={(e) => setSelectedBackend(storeItems.find(item => item.id === Number(e.target.value)))}
+                  className="w-full text-xs p-3 border rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="" disabled>Choose ezbackend API...</option>
+                  {storeItems.filter(item => item.type === 'backend').map(item => (
+                    <option key={item.id} value={item.id}>{item.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex flex-col gap-1 text-[11px] text-slate-500">
+                <div className="flex justify-between">
+                  <span>Frontend status:</span>
+                  <span className={selectedFrontend ? "text-emerald-600 font-bold" : "text-amber-500 font-bold"}>
+                    {selectedFrontend ? "Linked" : "No client selected"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ezbackend Link:</span>
+                  <span className={selectedBackend ? "text-indigo-600 font-bold" : "text-amber-500 font-bold"}>
+                    {selectedBackend ? "Bind Completed" : "No backend selected"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECRETS VAULT MANAGER */}
+          {activeTab === 'secrets' && (
+            <div className="bg-white p-5 rounded-3xl border border-slate-200/60 space-y-4">
+              <div>
+                <h2 className="text-base font-extrabold flex items-center gap-1.5 text-slate-800">
+                  <Lock size={18} className="text-indigo-600" /> Secrets Vault
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">Securely register local keys. Specify what each secret is for so UIPie knows exactly when to use it.</p>
+              </div>
+
+              {/* Add New Secret Form */}
+              <div className="space-y-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Add New Secret</span>
+                
+                <input 
+                  type="text" 
+                  value={newSecretName} 
+                  onChange={(e) => setNewSecretName(e.target.value)} 
+                  placeholder="Secret Identifier (e.g., GEMINI_API_KEY)" 
+                  className="w-full p-2.5 border border-slate-200 bg-white rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                />
+
+                <input 
+                  type="password" 
+                  value={newSecretValue} 
+                  onChange={(e) => setNewSecretValue(e.target.value)} 
+                  placeholder="Token Value" 
+                  className="w-full p-2.5 border border-slate-200 bg-white rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                />
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase block">What is this secret for?</label>
+                  <select 
+                    value={newSecretPurpose}
+                    onChange={(e) => setNewSecretPurpose(e.target.value)}
+                    className="w-full p-2.5 border border-slate-200 bg-white rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="Gemini API Key">Gemini API Key (Generates App Code)</option>
+                    <option value="Database Connection Pass">Database Password (ezbackend Server)</option>
+                    <option value="GitHub Auth Token">GitHub Deployment Webhook</option>
+                    <option value="Other">Other (Custom Purpose)</option>
+                  </select>
+                </div>
+
+                {newSecretPurpose === 'Other' && (
+                  <input 
+                    type="text" 
+                    value={customPurposeText} 
+                    onChange={(e) => setCustomPurposeText(e.target.value)} 
+                    placeholder="Specify custom purpose..." 
+                    className="w-full p-2.5 border border-slate-200 bg-white rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                  />
+                )}
+
+                <button 
+                  onClick={handleAddSecret}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+                >
+                  <Key size={12} /> Save Secret
+                </button>
+              </div>
+
+              {/* Secrets List Directory */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Stored Credentials</span>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {secrets.map(s => (
+                    <div key={s.id} className="p-3 bg-white border rounded-xl flex items-center justify-between text-xs hover:border-indigo-200 transition">
+                      <div className="space-y-0.5 max-w-[70%]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-800 break-all">{s.name}</span>
+                          {s.isSystem && <span className="text-[8px] bg-indigo-50 text-indigo-600 px-1 rounded font-extrabold">System</span>}
+                        </div>
+                        <p className="text-[9px] text-slate-400 leading-normal">For: <span className="font-semibold text-slate-600">{s.purpose}</span></p>
+                        
+                        {/* Masked display */}
+                        <p className="font-mono text-[10px] text-slate-500 tracking-wider">
+                          {showSecretValueId === s.id ? s.value : '••••••••••••••••'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button 
+                          onClick={() => setShowSecretValueId(showSecretValueId === s.id ? null : s.id)}
+                          className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                          title="Reveal / Mask secret"
+                        >
+                          {showSecretValueId === s.id ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                        {!s.isSystem && (
+                          <button 
+                            onClick={() => handleDeleteSecret(s.id)}
+                            className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-500"
+                            title="Delete secret"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+
+        {/* Right Hand Column (Sandbox execution frames & monitoring) */}
+        <div className="lg:col-span-7 space-y-4">
+          
+          <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
+            
+            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-indigo-600" />
+                <span className="text-xs font-bold text-slate-600 tracking-tight">
+                  {activeTab === 'integrator' 
+                    ? 'Combined Sandbox Testing Environment' 
+                    : selectedItemForPreview ? `Selected: ${selectedItemForPreview.title}` : 'Live Sandbox Render Engine'}
+                </span>
+              </div>
+
+              {/* Device toggles */}
+              <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg">
+                <button 
+                  onClick={() => setPreviewDevice('mobile')} 
+                  className={`p-1.5 rounded-md transition-all ${previewDevice === 'mobile' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+                  title="Simulate Mobile View"
+                >
+                  <Smartphone size={14} />
+                </button>
+                <button 
+                  onClick={() => setPreviewDevice('desktop')} 
+                  className={`p-1.5 rounded-md transition-all ${previewDevice === 'desktop' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}
+                  title="Full Width"
+                >
+                  <Monitor size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Sandbox Render area */}
+            <div className="flex-1 p-4 bg-slate-100/40 flex justify-center items-center min-h-[380px]">
+              {activeTab === 'integrator' && integrationCode ? (
+                <iframe 
+                  title="UIPie Combined Sandbox"
+                  src={getIframeSrc(integrationCode)}
+                  className={`border border-slate-200/80 rounded-2xl bg-white shadow-sm transition-all duration-300 min-h-[360px] ${previewDevice === 'mobile' ? 'w-[320px]' : 'w-full'}`}
+                />
+              ) : selectedItemForPreview ? (
+                selectedItemForPreview.type === 'frontend' ? (
+                  <iframe 
+                    title="UIPie Live Render Sandbox"
+                    src={getIframeSrc(selectedItemForPreview.code)}
+                    className={`border border-slate-200/80 rounded-2xl bg-white shadow-sm transition-all duration-300 min-h-[360px] ${previewDevice === 'mobile' ? 'w-[320px]' : 'w-full'}`}
+                  />
+                ) : (
+                  <div className="w-full h-full max-w-md p-6 bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs rounded-2xl overflow-y-auto space-y-3">
+                    <div className="flex justify-between items-center border-b border-slate-850 pb-2">
+                      <span className="text-emerald-400 font-bold">ezbackend Endpoint Schema</span>
+                      <span className="text-[10px] text-slate-500">Live API response</span>
+                    </div>
+                    <pre className="whitespace-pre-wrap break-all select-all leading-relaxed bg-slate-950 p-4 rounded-xl shadow-inner border border-slate-800">
+                      {selectedItemForPreview.code}
+                    </pre>
+                  </div>
+                )
+              ) : (
+                <div className="text-center p-8 space-y-2 text-slate-400">
+                  <Bot className="w-8 h-8 mx-auto text-slate-300 animate-pulse" />
+                  <p className="text-xs">Select or generate components to view active output.</p>
+                </div>
+              )}
+            </div>
+
+            {/* CHARGE BACK REFINE INTERFACE (AI Feedback loop) */}
+            {selectedItemForPreview && (
+              <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                  <Zap size={14} className="text-indigo-600 fill-indigo-600/20" />
+                  <span>Charge Back Iterative AI Engine</span>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-700 font-extrabold px-1.5 py-0.5 rounded-full ml-auto uppercase tracking-wider">Refine Component</span>
+                </div>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    value={refinePrompt}
+                    onChange={(e) => setRefinePrompt(e.target.value)}
+                    disabled={isImproving}
+                    placeholder={`How should we improve "${selectedItemForPreview.title}"? (e.g., "make it dark mode", "add columns")`}
+                    className="flex-1 text-xs px-3 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleImprove}
+                    disabled={isImproving || !refinePrompt.trim()}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+                  >
+                    {isImproving ? (
+                      <>
+                        <RefreshCw size={12} className="animate-spin" />
+                        Refining...
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={12} />
+                        Improve
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Inspect / Copy Footer bar */}
+            {activeTab === 'integrator' && integrationCode ? (
+              <div className="border-t border-slate-100 p-4 bg-slate-900 text-slate-400">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase font-mono flex items-center gap-1">
+                    <Code size={12} /> Combined Unified Stack Code
+                  </span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => copyToClipboard(integrationCode, 'preview-snippet')} 
+                      className="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95"
+                    >
+                      {copiedId === 'preview-snippet' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                      Copy Client Code
+                    </button>
+                    <button 
+                      onClick={() => copyToClipboard(getFullHtmlDocument(integrationCode), 'preview-full-doc')} 
+                      className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-600/20"
+                    >
+                      {copiedId === 'preview-full-doc' ? <Check size={12} className="text-emerald-400" /> : <FileCode size={12} />}
+                      Copy Standalone HTML Page
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : selectedItemForPreview && (
+              <div className="border-t border-slate-100 p-4 bg-slate-900 text-slate-400">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase font-mono flex items-center gap-1">
+                    <Code size={12} /> Component Code Inspector
+                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => copyToClipboard(selectedItemForPreview.code, 'preview-snippet')} 
+                      className="text-xs bg-slate-800 hover:bg-slate-700 hover:text-white text-indigo-300 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95"
+                    >
+                      {copiedId === 'preview-snippet' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                      Copy Code Snippet
+                    </button>
+                    <button 
+                      onClick={() => copyToClipboard(getFullHtmlDocument(selectedItemForPreview.code), 'preview-full-doc')} 
+                      className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-600/20"
+                    >
+                      {copiedId === 'preview-full-doc' ? <Check size={12} className="text-emerald-400" /> : <FileCode size={12} />}
+                      Copy Standalone HTML Page
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-24 overflow-y-auto text-[11px] font-mono p-3 bg-slate-950 rounded-xl select-all border border-slate-800 text-indigo-300 break-all leading-relaxed whitespace-pre-wrap">
+                  {selectedItemForPreview.code}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  );
+}
